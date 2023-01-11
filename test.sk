@@ -1,0 +1,59 @@
+
+
+# function uid() :: string:
+#     loop 8 times:
+#         set {_uid::%loop-value%} to "%random integer between 0 and 9%"
+#     set {_value} to join {_uid::*}
+#     return {_value}
+
+# # Obtention d'un ID unique pour l'index de chaque nouvelle zone
+# set {_uid} to uid()
+# # Vérifie qu'il n'y a pas de doublon, auquel cas on génère un nouvel ID
+# while indices of {zp-owners::%player's uuid%::zones::%{_uid}%::*} contains {_uid}:
+#     set {_uid} to uid()
+
+options:
+    magicPowder: "&bPoudre magique"
+
+on right click:
+    if player is holding a sugar named {@magicPowder}:
+        if player has metadata "BoostedSugar_lastused":
+            set {_waited} to difference between player's metadata "BoostedSugar_lastused" and now
+            if {_waited} is less than 3 minutes:
+                send "&6Vous devez encore attendre &r%difference between 3 minutes and {_waited}% &6avant de reconsommer de la poudre magique"
+            else:
+                apply speed to the player for 180 seconds
+                remove 1 sugar named {@magicPowder} from player's inventory
+                clear player's metadata "BoostedSugar_lastused"
+                send "&2Vous avez sniffé de la poudre magique ! Décollage immédiat !!!"
+        else:
+            set player's metadata "BoostedSugar_lastused" to now
+            apply speed to the player for 180 seconds
+            remove 1 sugar named {@magicPowder} from player's inventory
+            send "&2Vous avez sniffé de la poudre magique ! Décollage immédiat !!!"
+
+command /sugar:
+    trigger:
+        give 1 sugar named {@magicPowder} to player
+        send "&2Vous avez reçu de la poudre magique. Un coup dans les naseaux et c'est partit !"
+
+command /setindice:
+    trigger:
+        set {_list::%player's uuid%::age} to 43
+        if indices of {_list::*} are set:
+            send "la liste d'indices de joueurs contient une valeur"
+        else:
+            send "la liste d'indices de joueurs ne continent pas de valeurs :/"
+        wait 3 seconds
+        clear {_list::%player's uuid%::*}
+        clear {_list::*}
+        wait 3 seconds
+        if indices of {_list::*} are set:
+            send "la liste d'indices de joueurs contient une valeur"
+        else:
+            send "la liste d'indices de joueurs NE contient PAS de valeurs"
+
+command /getitemname:
+    trigger:
+        send "%player's tool%" 
+

@@ -1,0 +1,80 @@
+# =============================================================
+#                            OPTIONS
+# =============================================================
+
+Options:
+    defaultHome: "Home par défaut"
+    # Open source color scheme (https://yeun.github.io/open-color/ingredients.html)
+    darkgray: <##495057>
+    gray: <##adb5bd>
+    lightgray: <##e9ecef>
+    red: <##ff6b6b>
+    pink: <##f06595>
+    grape: <##cc5de8>
+    violet: <##845ef7>
+    lightviolet: <##d0bfff>
+    indigo: <##5c7cfa>
+    blue: <##339af0>
+    cyan: <##22b8cf>
+    teal: <##20c997>
+    green: <##51cf66>
+    lime: <##94d82d>
+    yellow: <##fcc419>
+    orange: <##ff922b>
+
+# =============================================================
+#                           COMMANDES
+# =============================================================
+
+command /sethome:
+    trigger:
+        set {mh-owners::%player's uuid%::homes::%{@defaultHome}%} to player's location
+        send "-------------------------"
+        send "{@green}Votre home par défaut a bien été défini"
+        send "-------------------------"
+
+command /home [<text>]:
+    trigger:
+        if text-arg isn't set:
+            teleport player to {mh-owners::%player's uuid%::homes::%{@defaultHome}%}
+        else:
+            if indices of {mh-owners::%player's uuid%::homes::*} contains text-arg:
+                teleport player to {mh-owners::%player's uuid%::homes::%text-arg%}
+            else:
+                send "-------------------------"
+                send "{@red}Le home &r%text-arg% {@red}n'existe pas."
+                send "-------------------------"
+
+command /addhome <text>:
+    trigger:
+        if indices of {mh-owners::%player's uuid%::homes::*} doesn't contain text-arg:
+            set {mh-owners::%player's uuid%::homes::%text-arg%} to player's location
+            send "-------------------------"
+            send "{@green}Vous avez bien ajouté &r%text-arg% {@green}à vos homes"
+            send "-------------------------"
+        else:
+            send "-------------------------"
+            send "{@red}Le nom de home &r%text-arg% {@red}est déjà utilisé"
+            send "-------------------------"
+
+command /homelist:
+    trigger:
+        send "-------------------------"
+        send "{@orange}Cliquez sur le home voulu pour vous y téléporter"
+        loop indices of {mh-owners::%player's uuid%::homes::*}:
+            add 1 to {_i}
+            send formatted "{@blue}%{_i}% | &r<command:/home %loop-value%>%loop-value%<reset>"
+        send "-------------------------"
+
+command /delhome <text>:
+    trigger:
+        if indices of {mh-owners::%player's uuid%::homes::*} contains text-arg:
+            set {_homeName} to text-arg
+            clear {mh-owners::%player's uuid%::homes::%text-arg%}
+            send "-------------------------"
+            send "{@green}Le home &r%{_homeName}% {@green}a bien été supprimé."
+            send "-------------------------"
+        else:
+            send "-------------------------"
+            send "{@red}Le nom renseigné ne correspond à aucune home existant"
+            send "-------------------------"

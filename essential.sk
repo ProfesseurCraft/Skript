@@ -1,0 +1,147 @@
+# =============================================================
+#                            OPTIONS
+# =============================================================
+
+options:
+    # Open source color scheme (https://yeun.github.io/open-color/ingredients.html)
+    darkgray: <##495057>
+    gray: <##adb5bd>
+    lightgray: <##e9ecef>
+    red: <##ff6b6b>
+    pink: <##f06595>
+    grape: <##cc5de8>
+    violet: <##845ef7>
+    lightviolet: <##d0bfff>
+    indigo: <##5c7cfa>
+    blue: <##339af0>
+    cyan: <##22b8cf>
+    teal: <##20c997>
+    green: <##51cf66>
+    lime: <##94d82d>
+    yellow: <##fcc419>
+    orange: <##ff922b>
+
+# =============================================================
+#                           FONCTIONS
+# =============================================================
+
+function tp_request(tp_type: text, requester: player, receiver: player):
+    if {_receiver} has metadata "tp_pending_request":
+        if metadata "tp_requester" of {_receiver} is {_requester}:
+            send "-------------------------" to {_requester}
+            send "{@red}Vous avez déjà envoyé une requête &r%{_receiver}'s metadata "tp_pending_request"% {@red}à &r%{_receiver}%" to {_requester}
+            send "-------------------------" to {_requester}
+        else:
+            send "-------------------------" to {_requester}
+            send "{@red}Une requête de téléportation est déjà en cours pour &r%{_receiver}%" to {_requester}
+            send "-------------------------" to {_requester}
+    else:
+        set metadata "tp_pending_request" of {_receiver} to {_tp_type}
+        set metadata "tp_requester" of {_receiver} to {_requester}
+        # Envoyé au destinataire
+        if {_tp_type} is "tpa":
+            send "-------------------------" to {_receiver}
+            send "{@blue}Le joueur &r%{_requester}% {@blue}souhaite se téléporter à vous" to {_receiver}
+        if {_tp_type} is "tpahere":
+            send "-------------------------" to {_receiver}
+            send "{@blue}Le joueur &r%{_requester}% {@blue}souhaite vous téléporter à son emplacement" to {_receiver}
+        send "{@blue}Cliquez ici &r<command:/tpaccept>[Accepter]<reset> {@blue}pour accepter" to {_receiver}
+        send "{@blue}Cliquez ici &r<command:/tpdeny>[Refuser]<reset> {@blue}pour refuser" to {_receiver}
+        send "{@orange}Cette invitation sera supprimée dans &r15 {@orange}secondes" to {_receiver}
+        send "-------------------------" to {_receiver}
+        # Confirmation de la requête au demandeur du tp
+        send "-------------------------" to {_requester}
+        send "{@green}Votre requête &r%{_tp_type}% {@green}a bien été envoyé à &r%{_receiver}%{@green}." to {_requester}
+        send "{@orange}Elle expirera dans &r15 {@orange}secondes" to {_requester}
+        send "-------------------------" to {_requester}
+        wait 15 seconds
+        clear {_receiver}'s metadata "tp_pending_request"
+        clear {_receiver}'s metadata "tp_requester"
+
+function tp_response(res: text, receiver: player):
+    if {_receiver} has metadata "tp_pending_request":
+        if {_res} is "accept":
+            # Téléporte le demandeur de tp au destinataire
+            if {_receiver}'s metadata "tp_pending_request" is "tpa":
+                teleport {_receiver}'s metadata "tp_requester" to {_receiver}
+            # Téléporte le destinataire au demandeur de tp
+            if {_receiver}'s metadata "tp_pending_request" is "tpahere":
+                teleport {_receiver} to {_receiver}'s metadata "tp_requester"
+        if {_res} is "deny":
+            # message du refus de tp au demandeur
+            send "-------------------------" to {_receiver}'s metadata "tp_requester"
+            send "%{_receiver}% {@red}a refusé votre demande de &r%{_receiver}'s metadata "tp_pending_request"%" to {_receiver}'s metadata "tp_requester"
+            send "-------------------------" to {_receiver}'s metadata "tp_requester"
+            # Confirmation de l'invalidation de la demande de tp
+            send "-------------------------" to {_receiver}
+            send "{@gray}La demande de &r%{_receiver}'s metadata "tp_pending_request"% {@gray}de &r%{_receiver}'s metadata "tp_requester"% {@gray}a bien été invalidée" to {_receiver}
+            send "-------------------------" to {_receiver}
+        clear {_receiver}'s metadata "tp_pending_request"
+        clear {_receiver}'s metadata "tp_requester"
+    else:
+        send "-------------------------" to {_receiver}
+        send "{@gray}Aucune demande de téléportation en cours." to {_receiver}
+        send "-------------------------" to {_receiver}
+
+# =============================================================
+#                           ÉVÉNEMENTS
+# =============================================================
+
+# Colorisation chat
+# -----------------
+on chat:
+    cancel event
+    broadcast "[{@darkgray}Chat&r] [{@grape}%player%&r] : {@lightgray}%message%"
+
+# =============================================================
+#                           COMMANDES
+# =============================================================
+
+# Tous les joueurs
+# ----------------
+
+command /spawn:
+    trigger:
+        teleport player to world's spawn point
+
+command /tpa <player>:
+    trigger:
+        tp_request("tpa", player, player-arg)
+
+command /tpahere <player>:
+    trigger:
+        tp_request("tpahere", player, player-arg)
+
+command /tpaccept:
+    trigger:
+        tp_response("accept", player)
+        
+command /tpdeny:
+    trigger:
+        tp_response("deny", player)
+
+command /sharelink <text> <text>:
+    description: Partager un lien en le rendant cliquable
+    usage: /sharelink <lien> <texte du lien>
+    trigger:
+        send "-------------------------"
+        send formatted "{@lightviolet}Lien partagé : &r<link:%arg-1%><tooltip:{@lightviolet}Cliquez pour ouvrir dans un navigateur>%arg-2%<reset>" to player
+        send "-------------------------"
+
+# Admins uniquement
+# -----------------
+
+command /setspawn:
+    executable by: console
+    trigger:
+        set world's spawn point to player's location
+        send "-------------------------"
+        send "{@green}Vous avez bien redéfini le point de spawn du monde"
+        send "-------------------------"
+
+command /killentities <int>:
+    executable by: console
+    trigger:
+        loop all entities in radius int-arg around player:
+            if loop-entity is not the player:
+                kill loop-entity

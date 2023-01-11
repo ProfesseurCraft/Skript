@@ -1,0 +1,80 @@
+# =============================================================
+#                            OPTIONS
+# =============================================================
+
+options:
+    # Open source color scheme (https://yeun.github.io/open-color/ingredients.html)
+    darkgray: <##495057>
+    gray: <##adb5bd>
+    lightgray: <##e9ecef>
+    red: <##ff6b6b>
+    pink: <##f06595>
+    grape: <##cc5de8>
+    violet: <##845ef7>
+    lightviolet: <##d0bfff>
+    indigo: <##5c7cfa>
+    blue: <##339af0>
+    cyan: <##22b8cf>
+    teal: <##20c997>
+    green: <##51cf66>
+    lime: <##94d82d>
+    yellow: <##fcc419>
+    orange: <##ff922b>
+
+# =============================================================
+#                           COMMANDES
+# =============================================================
+
+command /help:
+    usage: /help <nom de la commande>
+    trigger:    
+        send "-------------------------"
+        send "{@violet}Cliquez sur la catégorie voulue pour obtenir de l'aide"
+        send formatted "<command:/help-home>{@yellow}/help-home : {@lightgray}définit des points de TP pour vos résidences<reset>"
+        send formatted "<command:/help-tp>{@yellow}/help-tp : &rvous téléporte à un joueur et inversement"
+        send formatted "<command:/help-zoneprotect>{@yellow}/help-zoneprotect : &rprotège vos terrains / maisons du grief"
+        send formatted "<command:/help-sharelink>{@yellow}/help-sharelink : &rpartage de lien internet cliquable"
+        send "-------------------------"
+
+command /help-home:
+    trigger:
+        send "-------------------------"
+        send "{@violet}[HOME] : "
+        send "{@yellow}/sethome: &rDéfinit le point de TP de votre résidence par défaut"
+        send "{@yellow}/home: &rVous téléporte à votre résidence par défaut"
+        send "{@yellow}/addhome <nom>: &rAjoute un point de TP à vos résidences"
+        send "{@yellow}/home <nom>: &rVous téléporte à une de vos résidences"
+        send "{@yellow}/homelist: &rAffiche toutes vos résidences (cliquables)"
+        send "{@yellow}/delhome <nom>: &rSupprime une résidence de vos points de TP"
+        send "-------------------------"
+
+command /help-tp:
+    trigger:
+        send "-------------------------"
+        send "{@violet}[TPA / TPAHERE] : "
+        send "{@yellow}/tpa <joueur>: &rVous téléporte à un joueur"
+        send "{@yellow}/tpahere <joueur>: &rTéléporte un joueur à votre position"
+        send "{@yellow}/tpaccept: &rAccepte une demande de TP"
+        send "{@yellow}/tpdeny: &rRefuse une demande de TP"
+        send "-------------------------"
+
+command /help-zoneprotect:
+    trigger:
+        send "-------------------------"
+        send "{@violet}[ZONE PROTECT] : "
+        send "{@yellow}/zp-sword: &rUne épée pour sélectionner une zone à protéger"
+        send "{@yellow}/zp-addzone <nom zone>: &rAjoute une zone à protéger"
+        send "{@yellow}/zp-listzones: &rAffiche toutes vos zones protégées"
+        send "{@yellow}/zp-removezone <nom zone>: &rSupprime une zone protégée"
+        send "{@yellow}/zp-addfriend <nom zone> <joueur>: &rAjoute un ami à une zone"
+        send "{@yellow}/zp-listfriends <nom zone>: &rAffiche tous les amis d'une zone"
+        send "{@yellow}/zp-removefriend <nom zone> <joueur>: &rRetire l'ami d'une zone" 
+        send "-------------------------"
+
+command /help-sharelink:
+    trigger:
+        send "-------------------------"
+        send "{@violet}[Share link] : "
+        send "{@yellow}/sharelink <lien> <texte>: &rPartage un lien cliquable"
+        send "-------------------------"
+

@@ -1,0 +1,26 @@
+# =============================================================
+#                            OPTIONS
+# =============================================================
+
+options:
+    blocks: any chest or any furnace
+
+# =============================================================
+#                           ÉVÉNEMENTS
+# =============================================================
+
+on place of {@blocks}:
+    add event-location to {bp-owners::%player's uuid%::chests::*}
+
+on break of {@blocks}:
+    loop {bp-owners::%player's uuid%::chests::*}:
+        if loop-value is event-location:
+            clear {bp-owners::%player's uuid%::chests::%loop-index%}
+
+on click on {@blocks}:
+    loop indices of {bp-owners::*}:
+        loop {bp-owners::%loop-value-1%::chests::*}:
+            if loop-value-2 is event-location:
+                if loop-value-1 isn't event-player's uuid:
+                    cancel event
+                    send "&cCe block appartient à &r%loop-value-1 parsed as player%"
