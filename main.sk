@@ -31,9 +31,9 @@ command /help:
         send "-------------------------"
         send "{@violet}Cliquez sur la catégorie voulue pour obtenir de l'aide"
         send formatted "<command:/help-home>{@yellow}/help-home : {@lightgray}définit des points de TP pour vos résidences<reset>"
-        send formatted "<command:/help-tp>{@yellow}/help-tp : &rvous téléporte à un joueur et inversement"
-        send formatted "<command:/help-zoneprotect>{@yellow}/help-zoneprotect : &rprotège vos terrains / maisons du grief"
-        send formatted "<command:/help-sharelink>{@yellow}/help-sharelink : &rpartage de lien internet cliquable"
+        send formatted "<command:/help-tp>{@yellow}/help-tp : {@lightgray}vous téléporte à un joueur et inversement<reset>"
+        send formatted "<command:/help-zoneprotect>{@yellow}/help-zoneprotect : {@lightgray}protège vos terrains / maisons du grief<reset>"
+        send formatted "<command:/help-sharelink>{@yellow}/help-sharelink : {@lightgray}partage de lien internet cliquable<reset>"
         send "-------------------------"
 
 command /help-home:
