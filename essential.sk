@@ -93,6 +93,14 @@ on chat:
     cancel event
     broadcast "[{@darkgray}Chat&r] [{@grape}%player%&r] : {@lightgray}%message%"
 
+# Sauvegarde du lieu de décès
+# ---------------------------
+on death:
+    set {lastDeathLocation.%victim's uuid%} to victim's location
+    send "-------------------------" to victim
+    send "{@blue}/back {@gray}pour revenir au lieu de votre mort" to victim
+    send "-------------------------" to victim
+
 # =============================================================
 #                           COMMANDES
 # =============================================================
@@ -119,6 +127,18 @@ command /tpaccept:
 command /tpdeny:
     trigger:
         tp_response("deny", player)
+
+command /back:
+    trigger:
+        if {lastDeathLocation.%player's uuid%} is set:
+            teleport player to {lastDeathLocation.%player's uuid%}
+            send "-------------------------"
+            send "{@green}Vous avez été téléporté à votre dernier lieu de décès."
+            send "-------------------------"
+        else:
+            send "-------------------------"
+            send "{@gray}Vous n'avez aucun lieu de décès enregistré."
+            send "-------------------------"
 
 command /sharelink <text> <text>:
     description: Partager un lien en le rendant cliquable
