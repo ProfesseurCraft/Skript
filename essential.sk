@@ -96,11 +96,14 @@ on chat:
 # Sauvegarde du lieu de décès
 # ---------------------------
 on death:
-    set {lastDeathLocation.%victim's uuid%} to victim's location
-    send "-------------------------" to victim
-    send "{@blue}/back {@gray}pour revenir au lieu de votre mort" to victim
-    send "-------------------------" to victim
+    if victim is a player:
+        set {lastDeathLocation.%victim's uuid%} to victim's location
+        send "-------------------------" to victim
+        send "{@blue}/back {@gray}pour revenir au lieu de votre mort" to victim
+        send "-------------------------" to victim
 
+on explode:
+    cancel event
 # =============================================================
 #                           COMMANDES
 # =============================================================
