@@ -32,6 +32,9 @@ function locWithin(b: location, l1: location, l2: location) :: boolean:
                 return true
     return false
 
+# Vérifie les droits de construction d'un joueur
+# -----------------------------------------
+
 function isAllowed(player: player, location: location) :: boolean:
     set {_allowed} to true
     loop indices of {zp-owners::*}:
@@ -39,16 +42,40 @@ function isAllowed(player: player, location: location) :: boolean:
             set {_posA} to {zp-owners::%loop-value-1%::zones::%loop-value-2%::pos::a}
             set {_posB} to {zp-owners::%loop-value-1%::zones::%loop-value-2%::pos::b}
             if locWithin({_location}, {_posA}, {_posB}) is true:
+                # Vérifie les permissions des joueurs
                 if {_player}'s uuid isn't loop-value-1:
                     set {_allowed} to false
                 if {zp-owners::%loop-value-1%::zones::%loop-value-2%::friends::*} contains {_player}'s uuid:
                     set {_allowed} to true
-
     return {_allowed}
+
+
+# Options de zones
+# -----------------------------------------
+
+function addOptions(player: player):
+    loop indices of {zp-owners::%{_player}'s uuid%::zones::*}:
+        if {zp-owners::%{_player}'s uuid%::zones::%loop-value%::config::firespread} isn't set:
+            set {zp-owners::%{_player}'s uuid%::zones::%loop-value%::config::firespread} to true
+
+function checkOptions(option: text, location: location) :: boolean:
+    set {_enabled} to true
+    loop indices of {zp-owners::*}:
+        loop indices of {zp-owners::%loop-value-1%::zones::*}:
+            set {_posA} to {zp-owners::%loop-value-1%::zones::%loop-value-2%::pos::a}
+            set {_posB} to {zp-owners::%loop-value-1%::zones::%loop-value-2%::pos::b}
+            if locWithin({_location}, {_posA}, {_posB}) is true:
+                if {zp-owners::%loop-value-1%::zones::%loop-value-2%::config::%{_option}%} is set:
+                    set {_enabled} to {zp-owners::%loop-value-1%::zones::%loop-value-2%::config::%{_option}%}
+    return {_enabled}
 
 # =============================================================
 #                           ÉVÉNEMENTS
 # =============================================================
+
+on join: 
+    # Ajout des options aux zones du joueurs (ex : propagation du feu)
+    addOptions(player)
 
 on left click with a golden sword:
     if player is holding a golden sword named "{@yellow}Protection zone":
@@ -77,7 +104,9 @@ on place:
     if isAllowed(player, event-location) is false:
         cancel event
 
-
+on ignite:
+    if checkOptions("firespread", location) is false:
+        cancel event
 # =============================================================
 #                           COMMANDES
 # =============================================================
@@ -98,6 +127,7 @@ command /zp-addzone <text>:
                 if indices of {zp-owners::%player's uuid%::zones::*} doesn't contain text-arg:
                     set {zp-owners::%player's uuid%::zones::%text-arg%::pos::a} to player's metadata "ZP-A"
                     set {zp-owners::%player's uuid%::zones::%text-arg%::pos::b} to player's metadata "ZP-B"
+                    addOptions(player)
                     send "-------------------------"
                     send "{@green}La zone &r%text-arg% {@green}a bien été ajoutée à votre liste de propriétés ! "
                     send "-------------------------"
@@ -141,6 +171,8 @@ command /zp-removezone <text>:
     usage: /zp-removezone <nom de la zone à supprimer>
     trigger:
         if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg:
+            clear {zp-owners::%player's uuid%::zones::%text-arg%::friends::*}
+            clear {zp-owners::%player's uuid%::zones::%text-arg%::config::*}
             clear {zp-owners::%player's uuid%::zones::%text-arg%::pos::*}
             clear {zp-owners::%player's uuid%::zones::%text-arg%::*}
             clear {zp-owners::%player's uuid%::zones::%text-arg%}
@@ -223,4 +255,47 @@ command /zp-removefriend <text> <offlineplayer>:
             send "{@red}Le nom &r%text-arg% {@red}ne correspond à aucune zone existante"
             send "-------------------------"
 
+# Gestion configuration zone joueurs
+# --------------------------------------------
 
+command /zp-zoneconfig <text> <text> <boolean>:
+    description: Activer ou désactiver l'option d'une zone
+    usage: /zp-zonconfig <nom de la zone> <nom de l'option> <true ou false>
+    trigger:
+        broadcast "%text-arg-1% - %text-arg-2%"
+        if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg-1:
+            if indices of {zp-owners::%player's uuid%::zones::%text-arg-1%::config::*} contains text-arg-2:
+                set {zp-owners::%player's uuid%::zones::%text-arg-1%::config::%text-arg-2%} to boolean-arg
+                send "-------------------------"
+                if boolean-arg is true:
+                    send "{@gray}L'option &r%text-arg-2% {@gray}est désormais {@green}activée "
+                if boolean-arg is false:
+                    send "{@gray}L'option &r%text-arg-2% {@gray}est désormais {@red}désactivée "
+                send "-------------------------"
+            else:
+                send "-------------------------"
+                send "{@red}L'option &r%text-arg-2% {@red}n'existe pas"
+                send "-------------------------"      
+        else:
+            send "-------------------------"
+            send "{@red}Le nom &r%text-arg-1% {@red}ne correspond à aucune zone existante"
+            send "-------------------------"
+
+command /zp-listoptions <text>:
+    description: Liste toutes les options configurable d'une zone
+    usage: /zp-listoptions <nom de la zone>
+    trigger:
+        if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg:
+            if {zp-owners::%player's uuid%::zones::%text-arg-1%::config::*} is set:
+                send "-------------------------"
+                loop {zp-owners::%player's uuid%::zones::%text-arg-1%::config::*}:
+                    send "{@blue}Nom de l'option : &r%loop-index% {@blue}| Valeur : &r%loop-value%"
+                send "-------------------------"
+            else:
+                send "-------------------------"
+                send "{@orange}Veuillez vous déconnecter / reconnecter du serveur pour activer les options de zone"
+                send "-------------------------"            
+        else:
+            send "-------------------------"
+            send "{@red}Le nom &r%text-arg% {@red}ne correspond à aucune zone existante" 
+            send "-------------------------"    
