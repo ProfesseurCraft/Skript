@@ -1,0 +1,98 @@
+# =============================================================
+#                            OPTIONS
+# =============================================================
+
+options:
+    blocks: any chest or any furnace
+    # Open source color scheme (https://yeun.github.io/open-color/ingredients.html)
+    darkgray: <##495057>
+    gray: <##adb5bd>
+    lightgray: <##e9ecef>
+    red: <##ff6b6b>
+    pink: <##f06595>
+    grape: <##cc5de8>
+    violet: <##845ef7>
+    lightviolet: <##d0bfff>
+    indigo: <##5c7cfa>
+    blue: <##339af0>
+    cyan: <##22b8cf>
+    teal: <##20c997>
+    green: <##51cf66>
+    lime: <##94d82d>
+    yellow: <##fcc419>
+    orange: <##ff922b>
+# =============================================================
+#                           ÉVÉNEMENTS
+# =============================================================
+
+on place of {@blocks}:
+    add event-location to {bp-owners::%player's uuid%::chests::*}
+
+on break of {@blocks}:
+    loop {bp-owners::%player's uuid%::chests::*}:
+        if loop-value is event-location:
+            clear {bp-owners::%player's uuid%::chests::%loop-index%::friends::*}
+            clear {bp-owners::%player's uuid%::chests::%loop-index%::*}
+            clear {bp-owners::%player's uuid%::chests::%loop-index%}
+
+on click on {@blocks}:
+    set {_canOpen} to true
+    loop indices of {bp-owners::*}:
+        loop {bp-owners::%loop-value-1%::chests::*}:
+            if loop-value-2 is event-location:
+                if loop-value-1 isn't event-player's uuid:
+                    set {_canOpen} to false
+                    set {_chestOwner} to loop-value-1
+                if {bp-owners::%loop-value-1%::chests::%loop-index-1%::friends::*} contains event-player's uuid:
+                    set {_canOpen} to true
+    if {_canOpen} is false:
+        cancel event
+        send "-------------------------"
+        send "{@red}Ce block appartient à &r%{_chestOwner} parsed as player%"
+        send "-------------------------"
+
+on right click with tripwire hook:
+    if name of player's tool is "{@yellow}Déverrouiller pour un ami":
+        cancel event
+        set player's metadata "chestLocToUnlock" to event-block's location
+        send "-------------------------"
+        send "{@blue}Maintenant, utiliser /bp-addfriend <ami>"
+        send "-------------------------"
+
+# =============================================================
+#                           COMMANDES
+# =============================================================
+
+command /bp-key:
+    trigger:
+        give a tripwire hook named "{@yellow}Déverrouiller pour un ami" to player
+        send "-------------------------"
+        send "{@blue}Sélectionner le coffre à partager en cliquant avec votre clé"
+        send "-------------------------"
+
+command /bp-addfriend <offlineplayer>:
+    trigger:
+        set {_chestFounded} to false
+        if offlineplayer-arg has played before:
+            loop {bp-owners::%player's uuid%::chests::*}:
+                if loop-value-1 is player's metadata "chestLocToUnlock":
+                    set {_chestFounded} to true
+                    remove tripwire hook named "{@yellow}Déverrouiller pour un ami" from player's inventory
+                    clear player's metadata "chestLocToUnlock"
+                    if {bp-owners::%player's uuid%::chests::%loop-index%::friends::*} doesn't contain offlineplayer-arg's uuid:
+                        add offlineplayer-arg's uuid to {bp-owners::%player's uuid%::chests::%loop-index%::friends::*}
+                        send "-------------------------"
+                        send "{@green}Le joueur &r%offlineplayer-arg% {@green}est désormais autorisé à accéder à votre coffre"
+                        send "-------------------------"
+                    else:
+                        send "-------------------------"
+                        send "{@green}Le joueur &r%offlineplayer-arg% {@green}est déjà autorisé à accéder à votre coffre"
+                        send "-------------------------"
+            if {_chestFounded} is false:
+                send "-------------------------"
+                send "{@red}Le coffre cliqué ne fait pas partie de vos coffres protégés"
+                send "-------------------------"              
+        else:
+            send "-------------------------"
+            send "{@red}Le pseudo &r%offlineplayer-arg% {@red}ne fait référence à aucun joueur du serveur"
+            send "-------------------------"

@@ -1,0 +1,145 @@
+# =============================================================
+#                         IMPORTS (Java)
+# =============================================================
+
+import:
+    org.bukkit.block.Sign
+
+# =============================================================
+#                            OPTIONS
+# =============================================================
+
+options:
+    # Open source color scheme (https://yeun.github.io/open-color/ingredients.html)
+    darkgray: <##495057>
+    gray: <##adb5bd>
+    lightgray: <##e9ecef>
+    red: <##ff6b6b>
+    pink: <##f06595>
+    grape: <##cc5de8>
+    violet: <##845ef7>
+    lightviolet: <##d0bfff>
+    indigo: <##5c7cfa>
+    blue: <##339af0>
+    cyan: <##22b8cf>
+    teal: <##20c997>
+    green: <##51cf66>
+    lime: <##94d82d>
+    yellow: <##fcc419>
+    orange: <##ff922b>
+
+# =============================================================
+#                           FONCTIONS
+# =============================================================
+
+function marqueeWhileStarter(playerUUID: text, indice: text):
+    set {_location} to {mq-owners::%{_playerUUID}%::signs::%{_indice}%::location}
+    while {mq-owners::%{_playerUUID}%::signs::%{_indice}%::*} is set:
+        set {_txt} to {mq-owners::%{_playerUUID}%::signs::%{_indice}%::message}
+        set {_txt} to "________________%{_txt}%________________"
+        set {_txtlength} to length of {_txt}
+        set {_indexA} to 1
+        set {_indexB} to 15
+        while {_indexB} is smaller than {_txtlength}:
+            wait 3 tick
+            set {_message} to part of {_txt} from character {_indexA} to character {_indexB}
+            # On définie le texte de la ligne 2, dont l'effet glowing a été activé plus haut
+            set line 2 of block at {_location} to {_message}
+            add 1 to {_indexA}
+            add 1 to {_indexB}
+
+function restartAllMarquees():
+    loop all offlineplayers:
+        loop indices of {mq-owners::%loop-value-1's uuid%::signs::*}:
+            marqueeWhileStarter(loop-value-1's uuid, loop-value-2)
+
+
+
+# =============================================================
+#                           ÉVÉNEMENTS
+# =============================================================
+
+on skript load:
+    restartAllMarquees()
+
+on click on sign:
+    if player has metadata "marquee_message":
+
+        set {_alreadyExists} to false
+        loop indices of {mq-owners::%player's uuid%::signs::*}:
+            if {mq-owners::%player's uuid%::signs::%loop-value%::location} is event-location:
+                set {_alreadyExists} to true
+
+        if {_alreadyExists} is false:
+            set {_arraySize} to size of indices of {mq-owners::%player's uuid%::signs::*}
+            set {_id} to {_arraySize} + 1
+            set {mq-owners::%player's uuid%::signs::%{_id}%::description} to player's metadata "marquee_description"
+            set {mq-owners::%player's uuid%::signs::%{_id}%::message} to player's metadata "marquee_message"
+            set {mq-owners::%player's uuid%::signs::%{_id}%::location} to event-location
+            send "-------------------------"
+            send "{@green}Votre panneau est dorénavant fonctionnel"
+            send "-------------------------"
+            clear player's metadata "marquee_description"
+            clear player's metadata "marquee_color"
+            clear player's metadata "marquee_message"
+
+            set {_location} to {mq-owners::%player's uuid%::signs::%{_id}%::location}
+            set {_block} to block at {_location}
+
+            # *----- Traitement JAVA -----*
+            # On cible le block courant afin de lui activer l'effet glowing et on met à jour le panneau
+            set {_sign} to {_block}.getState()
+            {_sign}.setGlowingText(true)
+            {_sign}.setEditable(true)
+            {_sign}.update()
+            # *----- Traitement JAVA -----*
+
+            while {mq-owners::%player's uuid%::signs::%{_id}%::*} is set:
+                set {_txt} to {mq-owners::%player's uuid%::signs::%{_id}%::message}
+                set {_txt} to "________________%{_txt}%________________"
+                set {_txtlength} to length of {_txt}
+                set {_indexA} to 1
+                set {_indexB} to 15
+                while {_indexB} is smaller than {_txtlength}:
+                    wait 3 tick
+                    set {_message} to part of {_txt} from character {_indexA} to character {_indexB}
+                    # On définie le texte de la ligne 2, dont l'effet glowing a été activé plus haut
+                    set line 2 of {_block} to {_message}
+                    add 1 to {_indexA}
+                    add 1 to {_indexB}
+        else:
+            send "-------------------------"
+            send "{@red}Ce panneau est déjà défini"
+            send "-------------------------"
+
+
+on break of any sign:
+    loop indices of {mq-owners::%player's uuid%::signs::*}:
+        if {mq-owners::%player's uuid%::signs::%loop-value%::location} is event-location:
+            clear {mq-owners::%player's uuid%::signs::%loop-value%::*}
+            clear {mq-owners::%player's uuid%::signs::%loop-value%}
+
+# =============================================================
+#                           COMMANDES
+# =============================================================
+
+command /marquee <text> <text>:
+    usage: /marquee <Description> <Message>
+    trigger:
+        set player's metadata "marquee_description" to text-arg-1
+        set player's metadata "marquee_message" to text-arg-2
+        send "-------------------------"
+        send "{@blue}Description et message défini. Cliquez sur le panneau cible."
+        send "-------------------------"
+
+command /marqueelist:
+    trigger:
+        loop indices of {mq-owners::%player's uuid%::signs::*}:
+            set {_description} to {mq-owners::%player's uuid%::signs::%loop-value%::description}
+            set {_location} to {mq-owners::%player's uuid%::signs::%loop-value%::location}
+            set {_x} to rounded down x-coord of {_location}
+            set {_y} to rounded down y-coord of {_location}
+            set {_z} to rounded down z-coord of {_location}
+            send "-------------------------"
+            send formatted "{@blue}Se téléporter au panneau &r<command:/tp %player% %{_x}% %{_y}% %{_z}%>{@lightgray}%{_description}%"
+            send "-------------------------"

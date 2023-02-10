@@ -1,0 +1,301 @@
+# =============================================================
+#                            OPTIONS
+# =============================================================
+
+options:
+    # Open source color scheme (https://yeun.github.io/open-color/ingredients.html)
+    darkgray: <##495057>
+    gray: <##adb5bd>
+    lightgray: <##e9ecef>
+    red: <##ff6b6b>
+    pink: <##f06595>
+    grape: <##cc5de8>
+    violet: <##845ef7>
+    lightviolet: <##d0bfff>
+    indigo: <##5c7cfa>
+    blue: <##339af0>
+    cyan: <##22b8cf>
+    teal: <##20c997>
+    green: <##51cf66>
+    lime: <##94d82d>
+    yellow: <##fcc419>
+    orange: <##ff922b>
+
+# =============================================================
+#                           FONCTIONS
+# =============================================================
+
+function locWithin(b: location, l1: location, l2: location) :: boolean:
+    if x coord of {_b} is between x coord of {_l1} and x coord of {_l2}:
+        if y coord of {_b} is between y coord of {_l1} and y coord of {_l2}:
+            if z coord of {_b} is between z coord of {_l1} and z coord of {_l2}:
+                return true
+    return false
+
+# Vérifie les droits de construction d'un joueur
+# -----------------------------------------
+
+function isAllowed(player: player, location: location) :: boolean:
+    set {_allowed} to true
+    loop indices of {zp-owners::*}:
+        loop indices of {zp-owners::%loop-value-1%::zones::*}:
+            set {_posA} to {zp-owners::%loop-value-1%::zones::%loop-value-2%::pos::a}
+            set {_posB} to {zp-owners::%loop-value-1%::zones::%loop-value-2%::pos::b}
+            if locWithin({_location}, {_posA}, {_posB}) is true:
+                # Vérifie les permissions des joueurs
+                if {_player}'s uuid isn't loop-value-1:
+                    set {_allowed} to false
+                if {zp-owners::%loop-value-1%::zones::%loop-value-2%::friends::*} contains {_player}'s uuid:
+                    set {_allowed} to true
+    return {_allowed}
+
+
+# Options de zones
+# -----------------------------------------
+
+function addOptions(player: player):
+    loop indices of {zp-owners::%{_player}'s uuid%::zones::*}:
+        if {zp-owners::%{_player}'s uuid%::zones::%loop-value%::config::firespread} isn't set:
+            set {zp-owners::%{_player}'s uuid%::zones::%loop-value%::config::firespread} to true
+
+function checkOptions(option: text, location: location) :: boolean:
+    set {_enabled} to true
+    loop indices of {zp-owners::*}:
+        loop indices of {zp-owners::%loop-value-1%::zones::*}:
+            set {_posA} to {zp-owners::%loop-value-1%::zones::%loop-value-2%::pos::a}
+            set {_posB} to {zp-owners::%loop-value-1%::zones::%loop-value-2%::pos::b}
+            if locWithin({_location}, {_posA}, {_posB}) is true:
+                if {zp-owners::%loop-value-1%::zones::%loop-value-2%::config::%{_option}%} is set:
+                    set {_enabled} to {zp-owners::%loop-value-1%::zones::%loop-value-2%::config::%{_option}%}
+    return {_enabled}
+
+# =============================================================
+#                           ÉVÉNEMENTS
+# =============================================================
+
+on join: 
+    # Ajout des options aux zones du joueurs (ex : propagation du feu)
+    addOptions(player)
+
+on left click with a golden sword:
+    if player is holding a golden sword named "{@yellow}Protection zone":
+        set metadata "ZP-A" of player to location of targeted block
+        send "-------------------------"
+        send "{@blue}Tu as défini le point &rA"
+        send "-------------------------"
+
+on right click with a golden sword:
+    if player is holding a golden sword named "{@yellow}Protection zone":
+        if player has metadata "ZP-A":
+            set metadata "ZP-B" of player to location of targeted block
+            send "-------------------------"
+            send "{@blue}Tu as défini le point &rB"
+            send "-------------------------"
+        else:
+            send "-------------------------"
+            send "{@orange}Tu dois d'abord sélectionner le point &rA"
+            send "-------------------------"
+
+on left click:
+    if isAllowed(player, event-location) is false:
+        cancel event
+
+on place:
+    if isAllowed(player, event-location) is false:
+        cancel event
+
+on ignite:
+    if checkOptions("firespread", location) is false:
+        cancel event
+# =============================================================
+#                           COMMANDES
+# =============================================================
+
+# Création, édition et suppression de zones
+# -----------------------------------------
+command /zp-sword:
+    description: Donne une épée en or pour la sélection d'un cuboid
+    trigger:
+        give player golden sword named "{@yellow}Protection zone"
+
+command /zp-addzone <text>:
+    description: Ajoute une zone à la liste des zones protégées
+    usage: /zp-addzone <nom de la zone à ajouter>
+    trigger:
+        if player has metadata "ZP-A":
+            if player has metadata "ZP-B":
+                if indices of {zp-owners::%player's uuid%::zones::*} doesn't contain text-arg:
+                    set {zp-owners::%player's uuid%::zones::%text-arg%::pos::a} to player's metadata "ZP-A"
+                    set {zp-owners::%player's uuid%::zones::%text-arg%::pos::b} to player's metadata "ZP-B"
+                    addOptions(player)
+                    send "-------------------------"
+                    send "{@green}La zone &r%text-arg% {@green}a bien été ajoutée à votre liste de propriétés ! "
+                    send "-------------------------"
+                    remove golden sword named "{@yellow}Protection zone" from player's inventory
+                    clear player's metadata "ZP-A"
+                    clear player's metadata "ZP-B"
+                else:
+                    send "-------------------------"
+                    send "{@red}Le nom de zone &r%text-arg% {@red}est déjà utilisé"
+                    send "-------------------------"
+            else:
+                send "-------------------------"
+                send "{@orange}Vous devez sélectionner le point &rB {@orange}du cuboid"
+                send "-------------------------"
+        else:
+            send "-------------------------"
+            send "{@orange}Vous devez d'abord sélectionner le point &rA {@orange}du cuboid"
+            send "-------------------------"
+
+command /zp-listzones:
+    description: Affiche toutes les zones protégées du joueur
+    trigger:
+        if indices of {zp-owners::%player's uuid%::zones::*} are set: 
+            loop indices of {zp-owners::%player's uuid%::zones::*}:
+                send "-------------------------"
+                send "{@blue}Nom de la zone : &r%loop-value%"
+                set {_a.x} to x-coord of {zp-owners::%player's uuid%::zones::%loop-value%::pos::a}
+                set {_a.y} to y-coord of {zp-owners::%player's uuid%::zones::%loop-value%::pos::a}
+                set {_a.z} to z-coord of {zp-owners::%player's uuid%::zones::%loop-value%::pos::a}
+                set {_b.x} to x-coord of {zp-owners::%player's uuid%::zones::%loop-value%::pos::b}
+                set {_b.y} to y-coord of {zp-owners::%player's uuid%::zones::%loop-value%::pos::b}
+                set {_b.z} to z-coord of {zp-owners::%player's uuid%::zones::%loop-value%::pos::b}
+                send "{@blue}Coordonnées point &rA {@blue}: &r%{_a.x}%&3, &r%{_a.y}%&3, &r%{_a.z}%"
+                send "{@blue}Coordonnées point &rB {@blue}: &r%{_b.x}%&3, &r%{_b.y}%&3, &r%{_b.z}%"
+                send "-------------------------"
+        else:
+            send "{@gray}Vous n'avez aucune zone protégée."
+
+command /zp-removezone <text>:
+    description: Supprime une zone de la liste des zones protégées du joueur
+    usage: /zp-removezone <nom de la zone à supprimer>
+    trigger:
+        if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg:
+            clear {zp-owners::%player's uuid%::zones::%text-arg%::friends::*}
+            clear {zp-owners::%player's uuid%::zones::%text-arg%::config::*}
+            clear {zp-owners::%player's uuid%::zones::%text-arg%::pos::*}
+            clear {zp-owners::%player's uuid%::zones::%text-arg%::*}
+            clear {zp-owners::%player's uuid%::zones::%text-arg%}
+            send "-------------------------"
+            send "{@green}La zone &r%text-arg% {@green}a bien été supprimée."
+            send "-------------------------"
+        else:
+            send "-------------------------"
+            send "{@red}Le nom renseigné ne correspond à aucune zone existante"
+            send "-------------------------"
+
+# Ajout, liste et suppression d'amis, par zone
+# --------------------------------------------
+
+command /zp-addfriend <text> <offlineplayer>:
+    description: Ajoute un ami à une des zones protégées du joueur
+    usage: /zp-addfriend <nom de la zone> <joueur à ajouter>
+    trigger:
+        if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg:
+            if offlineplayer-arg has played before:
+                if {zp-owners::%player's uuid%::zones::%text-arg%::friends::*} doesn't contain offlineplayer-arg's uuid:
+                    add offlineplayer-arg's uuid to {zp-owners::%player's uuid%::zones::%text-arg%::friends::*}
+                    send "-------------------------"
+                    send "{@green}Le joueur &r%offlineplayer-arg% {@green}a bien été ajouté à vos amis dans la zone &r%text-arg%"
+                    send "-------------------------"
+                else:
+                    send "-------------------------"
+                    send "{@red}Le joueur &r%offlineplayer-arg% {@red}a déjà été ajouté à vos amis dans la zone &r%text-arg%"
+                    send "-------------------------"
+            else:
+                send "-------------------------"
+                send "{@red}Le pseudo &r%offlineplayer-arg% {@red}ne fait référence à aucun joueur du serveur"
+                send "-------------------------"
+        else:
+            send "-------------------------"
+            send "{@red}Le nom &r%text-arg% {@red}ne correspond à aucune zone existante"
+            send "-------------------------"
+
+command /zp-listfriends <text>:
+    description: Affiche la liste des amis autorisés à interagir avec une des zones du joueur
+    usage: /zp-listfriends <nom de la zone>
+    trigger:
+        if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg:
+            if {zp-owners::%player's uuid%::zones::%text-arg%::friends::*} is set:
+                send "-------------------------"
+                send "{@blue}Les joueurs autorisés dans votre zone &r%text-arg% {@blue}: "
+                loop {zp-owners::%player's uuid%::zones::%text-arg%::friends::*}:
+                    send "%loop-index% : {@yellow}%loop-value parsed as player%"
+                send "-------------------------"
+            else:
+                send "-------------------------"
+                send "{@gray}Vous n'avez aucun ami dans cette zone"
+                send "-------------------------"
+        else:
+            send "-------------------------"
+            send "{@red}Le nom &r%text-arg% {@red}ne correspond à aucune zone existante"
+            send "-------------------------"
+
+command /zp-removefriend <text> <offlineplayer>:
+    description: Supprimer un ami d'une des zones du joueur
+    usage: /zp-removefriend <nom de la zone> <joueur à supprimer>
+    trigger:    
+        if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg:
+            if offlineplayer-arg has played before:
+                if {zp-owners::%player's uuid%::zones::%text-arg%::friends::*} contains offlineplayer-arg's uuid:
+                    remove offlineplayer-arg's uuid from {zp-owners::%player's uuid%::zones::%text-arg%::friends::*}
+                    send "-------------------------"
+                    send "{@green}Le joueur &r%offlineplayer-arg% {@green}a bien été supprimé de vos amis dans la zone &r%text-arg%"
+                    send "-------------------------"
+                else:
+                    send "-------------------------"
+                    send "{@red}Le joueur &r%offlineplayer-arg% {@red}ne fait pas partie de vos amis dans la zone &r%text-arg%"
+                    send "-------------------------"
+            else:
+                send "-------------------------"
+                send "{@red}Le pseudo &r%offlineplayer-arg% {@red}ne fait référence à aucun joueur du serveur"
+                send "-------------------------"
+        else:
+            send "-------------------------"
+            send "{@red}Le nom &r%text-arg% {@red}ne correspond à aucune zone existante"
+            send "-------------------------"
+
+# Gestion configuration zone joueurs
+# --------------------------------------------
+
+command /zp-zoneconfig <text> <text> <boolean>:
+    description: Activer ou désactiver l'option d'une zone
+    usage: /zp-zonconfig <nom de la zone> <nom de l'option> <true ou false>
+    trigger:
+        broadcast "%text-arg-1% - %text-arg-2%"
+        if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg-1:
+            if indices of {zp-owners::%player's uuid%::zones::%text-arg-1%::config::*} contains text-arg-2:
+                set {zp-owners::%player's uuid%::zones::%text-arg-1%::config::%text-arg-2%} to boolean-arg
+                send "-------------------------"
+                if boolean-arg is true:
+                    send "{@gray}L'option &r%text-arg-2% {@gray}est désormais {@green}activée "
+                if boolean-arg is false:
+                    send "{@gray}L'option &r%text-arg-2% {@gray}est désormais {@red}désactivée "
+                send "-------------------------"
+            else:
+                send "-------------------------"
+                send "{@red}L'option &r%text-arg-2% {@red}n'existe pas"
+                send "-------------------------"      
+        else:
+            send "-------------------------"
+            send "{@red}Le nom &r%text-arg-1% {@red}ne correspond à aucune zone existante"
+            send "-------------------------"
+
+command /zp-listoptions <text>:
+    description: Liste toutes les options configurable d'une zone
+    usage: /zp-listoptions <nom de la zone>
+    trigger:
+        if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg:
+            if {zp-owners::%player's uuid%::zones::%text-arg-1%::config::*} is set:
+                send "-------------------------"
+                loop {zp-owners::%player's uuid%::zones::%text-arg-1%::config::*}:
+                    send "{@blue}Nom de l'option : &r%loop-index% {@blue}| Valeur : &r%loop-value%"
+                send "-------------------------"
+            else:
+                send "-------------------------"
+                send "{@orange}Veuillez vous déconnecter / reconnecter du serveur pour activer les options de zone"
+                send "-------------------------"            
+        else:
+            send "-------------------------"
+            send "{@red}Le nom &r%text-arg% {@red}ne correspond à aucune zone existante" 
+            send "-------------------------"    
