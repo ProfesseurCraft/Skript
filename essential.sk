@@ -77,16 +77,16 @@ command /sharelink <text> <text>:
 # -----------------
 
 command /setspawn:
-    executable by: console
     trigger:
-        set world's spawn point to player's location
-        send "-------------------------"
-        send "{@green}Vous avez bien redéfini le point de spawn du monde"
-        send "-------------------------"
+        if player is op:
+            set world's spawn point to player's location
+            send "-------------------------"
+            send "{@green}Vous avez bien redéfini le point de spawn du monde"
+            send "-------------------------"
 
 command /killentities <int>:
-    executable by: console
     trigger:
-        loop all entities in radius int-arg around player:
-            if loop-entity is not the player:
-                kill loop-entity
+        if player is op:
+            loop all entities in radius int-arg around player:
+                if loop-entity is not the player:
+                    kill loop-entity

@@ -1,0 +1,20 @@
+function stringToLoc(loc: text) :: location:
+    replace all "," in {_loc} with ""
+    set {_stringLoc::*} to {_loc} split by " "
+    set {_x} to {_stringLoc::2} parsed as number
+    set {_y} to {_stringLoc::4} parsed as number
+    set {_z} to {_stringLoc::6} parsed as number
+    set {_world} to {_stringLoc::12}
+    set {_location} to location({_x}, {_y}, {_z}, {_world})
+    return {_location}
+
+function middlePos(locA: location, locB: location) :: location:
+    set {_world} to world of {_locA}
+    set {_x} to (x-coord of {_locA} + x-coord of {_locB}) / 2
+    set {_y} to (y-coord of {_locA} + y-coord of {_locB}) / 2
+    set {_z} to (z-coord of {_locA} + z-coord of {_locB}) / 2
+    set {_location} to location({_x}, {_y}, {_z}, {_world})
+    return {_location}
+
+function broadcast(text: text):
+    broadcast "%{_text}%"

@@ -56,5 +56,3 @@ command /setindice:
 command /getitemname:
     trigger:
         send "%player's tool%"
-
-

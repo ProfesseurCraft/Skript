@@ -187,9 +187,9 @@ command /zp-removezone <text>:
 # Ajout, liste et suppression d'amis, par zone
 # --------------------------------------------
 
-command /zp-addfriend <text> <offlineplayer>:
+command /zp-addfriend <offlineplayer> <text>:
     description: Ajoute un ami à une des zones protégées du joueur
-    usage: /zp-addfriend <nom de la zone> <joueur à ajouter>
+    usage: /zp-addfriend <joueur à ajouter> <nom de la zone>
     trigger:
         if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg:
             if offlineplayer-arg has played before:
@@ -231,9 +231,9 @@ command /zp-listfriends <text>:
             send "{@red}Le nom &r%text-arg% {@red}ne correspond à aucune zone existante"
             send "-------------------------"
 
-command /zp-removefriend <text> <offlineplayer>:
+command /zp-removefriend <offlineplayer> <text>:
     description: Supprimer un ami d'une des zones du joueur
-    usage: /zp-removefriend <nom de la zone> <joueur à supprimer>
+    usage: /zp-removefriend <joueur à supprimer> <nom de la zone>
     trigger:    
         if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg:
             if offlineplayer-arg has played before:
@@ -258,27 +258,26 @@ command /zp-removefriend <text> <offlineplayer>:
 # Gestion configuration zone joueurs
 # --------------------------------------------
 
-command /zp-zoneconfig <text> <text> <boolean>:
+command /zp-zoneconfig <text> <boolean> <text>:
     description: Activer ou désactiver l'option d'une zone
-    usage: /zp-zonconfig <nom de la zone> <nom de l'option> <true ou false>
+    usage: /zp-zoneconfig <nom de l'option> <true ou false> <nom de la zone>
     trigger:
-        broadcast "%text-arg-1% - %text-arg-2%"
-        if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg-1:
-            if indices of {zp-owners::%player's uuid%::zones::%text-arg-1%::config::*} contains text-arg-2:
-                set {zp-owners::%player's uuid%::zones::%text-arg-1%::config::%text-arg-2%} to boolean-arg
+        if indices of {zp-owners::%player's uuid%::zones::*} contains text-arg-2:
+            if indices of {zp-owners::%player's uuid%::zones::%text-arg-2%::config::*} contains text-arg-1:
+                set {zp-owners::%player's uuid%::zones::%text-arg-2%::config::%text-arg-1%} to boolean-arg
                 send "-------------------------"
                 if boolean-arg is true:
-                    send "{@gray}L'option &r%text-arg-2% {@gray}est désormais {@green}activée "
+                    send "{@gray}L'option &r%text-arg-1% {@gray}est désormais {@green}activée "
                 if boolean-arg is false:
-                    send "{@gray}L'option &r%text-arg-2% {@gray}est désormais {@red}désactivée "
+                    send "{@gray}L'option &r%text-arg-1% {@gray}est désormais {@red}désactivée "
                 send "-------------------------"
             else:
                 send "-------------------------"
-                send "{@red}L'option &r%text-arg-2% {@red}n'existe pas"
+                send "{@red}L'option &r%text-arg-1% {@red}n'existe pas"
                 send "-------------------------"      
         else:
             send "-------------------------"
-            send "{@red}Le nom &r%text-arg-1% {@red}ne correspond à aucune zone existante"
+            send "{@red}Le nom &r%text-arg-2% {@red}ne correspond à aucune zone existante"
             send "-------------------------"
 
 command /zp-listoptions <text>:
@@ -298,4 +297,26 @@ command /zp-listoptions <text>:
         else:
             send "-------------------------"
             send "{@red}Le nom &r%text-arg% {@red}ne correspond à aucune zone existante" 
-            send "-------------------------"    
+            send "-------------------------"
+
+# =============================================================
+#                            ADMIN
+# =============================================================
+
+command /zp-zones:
+    trigger:
+        if player is op:
+            loop indices of {zp-owners::*}:
+                send "-------------------------"
+                send "{@blue}Nom du joueur: &r%loop-value-1 parsed as a offlineplayer%"
+                loop indices of {zp-owners::%loop-value-1%::zones::*}:
+                    set {_locA} to {zp-owners::%loop-value-1%::zones::%loop-value-2%::pos::a}
+                    set {_locB} to {zp-owners::%loop-value-1%::zones::%loop-value-2%::pos::b}
+                    send formatted "<command:/zp-tp %{_locA}%/%{_locB}%>{@violet}Nom de la zone: {@lightgray}%loop-value-2%<reset>"
+                    send "-------------------------"
+
+command /zp-tp <text>:
+    trigger:
+        if player is op:
+            set {_coords::*} to text-arg split by "/"
+            teleport player to middlePos(stringToLoc({_coords::1}), stringToLoc({_coords::2}))

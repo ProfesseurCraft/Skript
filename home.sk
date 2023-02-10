@@ -78,3 +78,23 @@ command /delhome <text>:
             send "-------------------------"
             send "{@red}Le nom renseigné ne correspond à aucune home existant"
             send "-------------------------"
+
+# =============================================================
+#                           ADMINS
+# =============================================================
+
+command /allhomeslist:
+    trigger:
+        if player is op:
+            loop offlineplayers:
+                if {mh-owners::%loop-value-1's uuid%::homes::*} is set:
+                    send "-------------------------"
+                    send "{@violet}Résidence de %loop-value-1%"
+                    loop indices of {mh-owners::%loop-value-1's uuid%::homes::*}:
+                        send formatted "{@yellow}&r<command:/tpadmintoplayerhome %{mh-owners::%loop-value-1's uuid%::homes::%loop-value-2%}%>Nom : {@lightgray}%loop-value-2%<reset>"
+                    send "-------------------------"
+
+command /tpadmintoplayerhome <text>:
+    trigger:
+        if player is op:
+            teleport player to stringToLoc(text-arg)
